@@ -1,15 +1,25 @@
-"""生成器工厂。默认 mock，openai 只有在显式选择且配置了密钥时才会创建。"""
+"""生成器工厂。默认 mock。openai 与豆包都要显式选择，且没有密钥就拒绝。"""
 
 from __future__ import annotations
 
 import os
 
 from guazi_script_agent.errors import AgentError
+from guazi_script_agent.llm.ark import (
+    create_ark_script_client,
+    create_ark_video_client,
+    create_ark_video_generation_client,
+)
 from guazi_script_agent.llm.base import LLMClient
 from guazi_script_agent.llm.mock import MockLLMClient
 from guazi_script_agent.llm.openai_compatible import OpenAICompatibleClient
 
-__all__ = ["LLMClient", "create_client"]
+__all__ = [
+    "LLMClient",
+    "create_client",
+    "create_video_client",
+    "create_video_generation_client",
+]
 
 
 def create_client(
@@ -28,4 +38,22 @@ def create_client(
         return OpenAICompatibleClient(
             api_key=api_key, model=resolved_model, base_url=resolved_url
         )
+    if provider == "ark":
+        return create_ark_script_client(model=model, base_url=base_url)
     raise AgentError(f"未知生成器：{provider}")
+
+
+def create_video_client(
+    provider: str, *, model: str | None = None, base_url: str | None = None
+):
+    if provider == "ark":
+        return create_ark_video_client(model=model, base_url=base_url)
+    raise AgentError("只有豆包提供方会调用视频理解模型。")
+
+
+def create_video_generation_client(
+    provider: str, *, model: str | None = None, base_url: str | None = None
+):
+    if provider == "ark":
+        return create_ark_video_generation_client(model=model, base_url=base_url)
+    raise AgentError("视频生成只使用豆包 Seedance 2.0。")

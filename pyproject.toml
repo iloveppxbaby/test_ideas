@@ -8,6 +8,7 @@ dependencies = ["pydantic>=2.6,<3"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+ark = ["volcengine-python-sdk[ark]"]
 
 [project.scripts]
 guazi-script = "guazi_script_agent.cli:main"

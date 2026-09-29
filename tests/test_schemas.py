@@ -68,6 +68,11 @@ def test_short_forbidden_phrase_is_rejected() -> None:
         )
 
 
+def test_reference_needs_duration_or_url() -> None:
+    with pytest.raises(ValidationError, match="duration_seconds"):
+        ReferenceVideo.model_validate({"transcript": "一段中性转写。"})
+
+
 def test_unknown_field_is_rejected() -> None:
     with pytest.raises(ValidationError):
         ValuePointSet.model_validate({"value_points": [], "extra": 1})
