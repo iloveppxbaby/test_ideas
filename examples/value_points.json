@@ -1,0 +1,23 @@
+{
+  "brand": "瓜子二手车",
+  "value_points": [
+    {
+      "id": "inspection-report",
+      "title": "标准化检测报告",
+      "description": "看车前可打开报告，核对骨架、发动机和底盘",
+      "evidence": "示例：详情页可打开该车检测报告",
+      "audience": "第一次买二手车、担心车况不透明的人",
+      "tone": "直白、克制、可信",
+      "forbidden_phrases": ["绝对无事故", "100%没问题", "全网最低价", "包过户无任何风险"]
+    },
+    {
+      "id": "test-drive",
+      "title": "先试驾再决定",
+      "description": "可以预约到店试驾，不合适可以不买",
+      "evidence": null,
+      "audience": "希望把决策留在真实驾乘感受上的人",
+      "tone": "轻松、不催单",
+      "forbidden_phrases": ["试驾完必须下单", "不买就亏了"]
+    }
+  ]
+}
