@@ -1,0 +1,39 @@
+{
+  "title": "买二手车前我踩过的三个坑",
+  "platform": "douyin",
+  "duration_seconds": 24,
+  "transcript": "家人们谁懂啊，去年我图便宜冲了一辆外表挺亮的车，开了两周异响，一查才知道事故没说清。所以今天把我的踩坑顺序讲明白：先看骨架，再听冷车，最后才谈价。别一上来就被低价带着跑。",
+  "rhythm_notes": [
+    {
+      "start_seconds": 0,
+      "end_seconds": 3,
+      "shot": "近景摇头，字幕砸出疑问",
+      "purpose": "开场钩子"
+    },
+    {
+      "start_seconds": 3,
+      "end_seconds": 9,
+      "shot": "快切三张翻车经历的截图",
+      "purpose": "经历展开"
+    },
+    {
+      "start_seconds": 9,
+      "end_seconds": 16,
+      "shot": "手指比出三条，每条切一个镜头",
+      "purpose": "清单证明"
+    },
+    {
+      "start_seconds": 16,
+      "end_seconds": 21,
+      "shot": "回到本人，语速放慢",
+      "purpose": "放慢转折"
+    },
+    {
+      "start_seconds": 21,
+      "end_seconds": 24,
+      "shot": "指向评论区，停在引导句",
+      "purpose": "引导互动"
+    }
+  ],
+  "why_viral": "先用个人吃亏故事制造代入，再用三条清单给获得感，结尾把行动收束到评论。"
+}

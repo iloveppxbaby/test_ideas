@@ -1,0 +1,27 @@
+[project]
+name = "guazi-script-agent"
+version = "0.1.0"
+description = "根据热点参考视频的结构与节奏，结合瓜子二手车价值点生成原创短视频脚本。"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.6,<3"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+guazi-script = "guazi_script_agent.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+guazi_script_agent = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
