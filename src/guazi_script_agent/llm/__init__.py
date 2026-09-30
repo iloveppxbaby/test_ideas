@@ -13,6 +13,7 @@ from guazi_script_agent.llm.ark import (
 from guazi_script_agent.llm.base import LLMClient
 from guazi_script_agent.llm.mock import MockLLMClient
 from guazi_script_agent.llm.openai_compatible import OpenAICompatibleClient
+from guazi_script_agent.local_env import ensure_local_api_key
 
 __all__ = [
     "LLMClient",
@@ -28,9 +29,12 @@ def create_client(
     if provider == "mock":
         return MockLLMClient()
     if provider == "openai":
-        api_key = os.environ.get("GUAZI_LLM_API_KEY", "").strip()
+        api_key = ensure_local_api_key()
         if not api_key:
-            raise AgentError("未设置环境变量 GUAZI_LLM_API_KEY，已拒绝调用外部模型。")
+            raise AgentError(
+                "未找到 GUAZI_LLM_API_KEY。请在本机 ~/.bashrc 写入 "
+                'export GUAZI_LLM_API_KEY="..."，然后在本机终端运行。'
+            )
         resolved_model = model or os.environ.get("GUAZI_LLM_MODEL", "gpt-4o-mini")
         resolved_url = base_url or os.environ.get(
             "GUAZI_LLM_BASE_URL", "https://api.openai.com/v1"

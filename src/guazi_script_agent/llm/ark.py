@@ -6,6 +6,7 @@ import os
 from typing import Any
 
 from guazi_script_agent.errors import AgentError
+from guazi_script_agent.local_env import ensure_local_api_key
 
 ARK_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
 DEFAULT_TEXT_MODEL = "doubao-seed-2-0-lite-260428"
@@ -142,9 +143,12 @@ def _resolve_model(model: str | None, env_name: str, default: str) -> str:
 
 
 def _require_api_key() -> str:
-    api_key = os.environ.get("GUAZI_LLM_API_KEY", "").strip()
+    api_key = ensure_local_api_key()
     if not api_key:
-        raise AgentError("未设置环境变量 GUAZI_LLM_API_KEY，已拒绝调用豆包。")
+        raise AgentError(
+            "未找到 GUAZI_LLM_API_KEY。请在本机 ~/.bashrc 写入 "
+            'export GUAZI_LLM_API_KEY="..."，然后在本机终端运行。'
+        )
     return api_key
 
 
