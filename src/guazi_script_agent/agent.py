@@ -14,6 +14,8 @@ from guazi_script_agent.llm.base import LLMClient
 from guazi_script_agent.llm.mock import MockLLMClient
 from guazi_script_agent.originality import assert_original
 from guazi_script_agent.prompts import PROMPT_VERSION, render_prompts
+from guazi_script_agent.prompts.text_v1 import TEXT_PROMPT_VERSION
+from guazi_script_agent.prompts.video_v1 import VIDEO_PROMPT_VERSION
 from guazi_script_agent.schemas import (
     TIME_TOLERANCE_SECONDS,
     DraftScript,
@@ -23,12 +25,36 @@ from guazi_script_agent.schemas import (
     VideoScript,
 )
 from guazi_script_agent.structure import extract_structure
+from guazi_script_agent.understanding import (
+    VideoUnderstander,
+    apply_text_understanding,
+    apply_video_understanding,
+    needs_text_understanding,
+)
 
 
 def generate_script(
-    request: ScriptRequest, llm: LLMClient | None = None
+    request: ScriptRequest,
+    llm: LLMClient | None = None,
+    understander: VideoUnderstander | None = None,
 ) -> VideoScript:
     client = llm if llm is not None else MockLLMClient()
+    used_video_model = False
+    used_text_model = False
+    if understander is not None:
+        request, used_video_model = apply_video_understanding(request, understander)
+    if (
+        not used_video_model
+        and client.name == "ark"
+        and needs_text_understanding(request.reference)
+    ):
+        request, used_text_model = apply_text_understanding(request, client)
+    if used_video_model:
+        prompt_version = f"{PROMPT_VERSION}+{VIDEO_PROMPT_VERSION}"
+    elif used_text_model:
+        prompt_version = f"{PROMPT_VERSION}+{TEXT_PROMPT_VERSION}"
+    else:
+        prompt_version = PROMPT_VERSION
     structure = extract_structure(request.reference, request.resolved_duration())
     system_prompt, user_prompt = render_prompts(request, structure)
     prompt = user_prompt
@@ -36,7 +62,7 @@ def generate_script(
     for _ in range(2):
         raw = client.complete(system_prompt=system_prompt, user_prompt=prompt)
         try:
-            return _accept(raw, request, structure, client.name)
+            return _accept(raw, request, structure, client.name, prompt_version)
         except OutputError as exc:
             last_error = exc
             prompt = f"{user_prompt}\n\n请只输出修正后的 JSON。问题：{exc}"
@@ -44,15 +70,22 @@ def generate_script(
 
 
 def _accept(
-    raw: str, request: ScriptRequest, structure: ReferenceStructure, provider: str
+    raw: str,
+    request: ScriptRequest,
+    structure: ReferenceStructure,
+    provider: str,
+    prompt_version: str,
 ) -> VideoScript:
     draft = _parse_draft(raw)
     _assert_matches_request(draft, request, structure)
     phrases = forbidden_phrases_of(request.value_points.value_points)
     scrubbed, hits = scrub_draft(draft, phrases)
     notes = build_compliance_notes(request.value_points.value_points, hits)
+    source_duration = request.reference.duration_seconds
+    if source_duration is None:
+        raise AgentError("参考视频缺少时长。请提供 duration_seconds，或传入 mp4 直链。")
     script = VideoScript(
-        prompt_version=PROMPT_VERSION,
+        prompt_version=prompt_version,
         provider=provider,
         title=scrubbed.title,
         target_duration_seconds=scrubbed.target_duration_seconds,
@@ -60,14 +93,13 @@ def _accept(
         beats=scrubbed.beats,
         cta=scrubbed.cta,
         compliance_notes=notes,
+        source_url=request.reference.url,
         structure_borrowed=StructureBorrowed(
             hook_type=structure.hook_type,
             beat_count=structure.beat_count,
             shot_density_per_10s=structure.shot_density_per_10s,
-            source_duration_seconds=request.reference.duration_seconds,
-            timing_scaled=abs(
-                structure.duration_seconds - request.reference.duration_seconds
-            )
+            source_duration_seconds=source_duration,
+            timing_scaled=abs(structure.duration_seconds - source_duration)
             > TIME_TOLERANCE_SECONDS,
         ),
     )

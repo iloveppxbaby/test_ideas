@@ -8,7 +8,7 @@ from guazi_script_agent.schemas import VideoScript
 
 
 def render_json(script: VideoScript) -> str:
-    payload = script.model_dump(mode="json")
+    payload = script.model_dump(mode="json", exclude_none=True)
     return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
 
 
@@ -25,6 +25,7 @@ def render_markdown(script: VideoScript) -> str:
         ),
         f"- 提示词版本：{script.prompt_version}",
         f"- 生成器：{script.provider}",
+        *([f"- 参考视频：{script.source_url}"] if script.source_url else []),
         "",
         "## 分镜",
         "",

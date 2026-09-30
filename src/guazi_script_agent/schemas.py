@@ -5,8 +5,11 @@ from __future__ import annotations
 from enum import Enum
 from itertools import pairwise
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from guazi_script_agent.errors import AgentError
 
 TIME_TOLERANCE_SECONDS = 0.05
 MIN_DURATION_SECONDS = 3
@@ -62,12 +65,34 @@ class RhythmNote(StrictModel):
 class ReferenceVideo(StrictModel):
     """热点参考视频。原文只用于本地分析，不会写进成稿。"""
 
-    title: str = Field(min_length=1, max_length=80)
-    platform: str = Field(min_length=1, max_length=40)
-    duration_seconds: float = Field(ge=MIN_DURATION_SECONDS, le=MAX_DURATION_SECONDS)
-    transcript: str = Field(min_length=1, max_length=8000, description="口播或字幕转写")
+    title: str = Field(default="参考视频", min_length=1, max_length=80)
+    platform: str = Field(default="url", min_length=1, max_length=40)
+    duration_seconds: float | None = Field(
+        default=None, ge=MIN_DURATION_SECONDS, le=MAX_DURATION_SECONDS
+    )
+    transcript: str = Field(default="", max_length=8000, description="口播或字幕转写")
     rhythm_notes: list[RhythmNote] = Field(default_factory=list)
     why_viral: str | None = Field(default=None, max_length=500)
+    url: str | None = Field(default=None, max_length=2000)
+    hook_type: HookType | None = None
+
+    @field_validator("url")
+    @classmethod
+    def url_is_http(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        parsed = urlparse(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("url 必须是 http 或 https 链接")
+        if parsed.username or parsed.password:
+            raise ValueError("url 不能包含账号密码")
+        return value
+
+    @model_validator(mode="after")
+    def needs_duration_or_url(self) -> ReferenceVideo:
+        if self.duration_seconds is None and not self.url:
+            raise ValueError("需要 duration_seconds，或提供视频 url")
+        return self
 
     @model_validator(mode="after")
     def notes_cover_timeline(self) -> ReferenceVideo:
@@ -76,6 +101,8 @@ class ReferenceVideo(StrictModel):
             return self
         if not 2 <= len(notes) <= 12:
             raise ValueError("rhythm_notes 需要 2 到 12 条")
+        if self.duration_seconds is None:
+            raise ValueError("有节奏要点时必须提供 duration_seconds")
         if notes[0].start_seconds > TIME_TOLERANCE_SECONDS:
             raise ValueError("rhythm_notes 必须从 0 秒开始")
         for previous, current in pairwise(notes):
@@ -161,6 +188,10 @@ class ScriptRequest(StrictModel):
             return self.target_duration_seconds
         if self.value_points.target_duration_seconds is not None:
             return self.value_points.target_duration_seconds
+        if self.reference.duration_seconds is None:
+            raise AgentError(
+                "参考视频缺少时长。请提供 duration_seconds，或传入 mp4 直链。"
+            )
         return self.reference.duration_seconds
 
 
@@ -285,6 +316,7 @@ class VideoScript(StrictModel):
     cta: str = Field(min_length=1, max_length=200)
     compliance_notes: list[ComplianceNote] = Field(min_length=1, max_length=30)
     structure_borrowed: StructureBorrowed
+    source_url: str | None = Field(default=None, max_length=2000)
 
     @model_validator(mode="after")
     def timeline_is_valid(self) -> VideoScript:

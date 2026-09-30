@@ -44,7 +44,7 @@ def extract_structure(
         beats = _synthesize_beats(target_duration)
     density = round(len(beats) * 10 / target_duration, 2)
     return ReferenceStructure(
-        hook_type=infer_hook_type(video),
+        hook_type=video.hook_type or infer_hook_type(video),
         duration_seconds=round(float(target_duration), 2),
         beat_count=len(beats),
         shot_density_per_10s=density,
@@ -74,7 +74,10 @@ def _role_for(purpose: str, index: int, total: int) -> BeatRole:
 def _beats_from_notes(
     video: ReferenceVideo, target_duration: float
 ) -> list[StructuralBeat]:
-    scale = target_duration / video.duration_seconds
+    source_duration = video.duration_seconds
+    if source_duration is None:
+        raise AgentError("参考视频缺少时长")
+    scale = target_duration / source_duration
     total = len(video.rhythm_notes)
     raw: list[tuple[float, BeatRole]] = []
     for index, note in enumerate(video.rhythm_notes):
